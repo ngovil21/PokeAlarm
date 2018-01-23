@@ -221,6 +221,25 @@ def load_raid_section(settings):
     return raid
 
 
+def load_pgpool_section(settings):
+    log.info("Setting up PGPool Filters...")
+    pool = {
+        "enabled": bool(parse_boolean(settings.pop('enabled', None)) or False),
+        "subtypes": settings.pop('subtypes', []),
+        "filters": create_multi_filter(
+            'PGPool --> filters', PGPoolFilter,
+            settings.pop('filters', "False"), PGPoolFilter.get_defaults())
+    }
+
+    if not isinstance(pool['subtypes'], list):
+            log.error("'subtypes' filter must be a list")
+            raise
+
+    log.debug("Report pgpool on system_id: {}, subtypes:".format(pool['system_id'], ",".join(pool['subtypes'])))
+
+    return pool
+
+
 # Base filter class. Every filter may contain at least these criteria.
 class Filter(object):
 
@@ -630,3 +649,28 @@ class GymFilter(Filter):
                           + "names and correct your Filters file.")
                 raise
         return s
+
+
+class PGPoolFilter(Filter):
+
+    def __init__(self, settings, default, location):
+        super(PGPoolFilter, self).__init__(settings, default, location)
+        self.subtypes = settings.pop('subtypes', [])
+        self.filters = settings.pop('filters', {})
+        reject_leftover_parameters(settings, "PGPool filter in "
+                                   + "{}".format(location))
+
+    @staticmethod
+    def get_defaults():
+        rtn = super(PokemonFilter, PokemonFilter).get_defaults()
+        rtn.update({
+                'system_id': None,
+                'min_level': 0,
+                'max_level': 40
+            })
+
+    def check_system_id(self, other):
+        if self.system_id is None:
+            return True
+        elif
+

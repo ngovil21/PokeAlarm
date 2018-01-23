@@ -26,7 +26,7 @@ from flask import Flask, request, abort
 from PokeAlarm import config
 from PokeAlarm.Cache import cache_options
 from PokeAlarm.Manager import Manager
-from PokeAlarm.WebhookStructs import RocketMap
+from PokeAlarm.WebhookStructs import RocketMap, PGPool
 from PokeAlarm.Utils import get_path, parse_unicode
 
 # Reinforce UTF-8 as default
@@ -107,6 +107,13 @@ def manage_webhook_data(queue):
                 log.debug("Distributed to {}.".format(name))
             log.debug("Finished distributing object with id "
                       + "{}".format(obj['id']))
+        else:
+            obj = PGPool.make_object(data)
+            for name, mgr in managers.iteritems():
+                mgr.update(obj)
+                log.debug("Distributed to {}.".format(name))
+                log.debug("Finished distributing object with username "
+                            + "{}".format(obj['username']))
         queue.task_done()
 
 

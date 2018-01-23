@@ -60,6 +60,10 @@ class Alarm(object):
     def raid_alert(self, pokeraid_info):
         raise NotImplementedError('Raid Alert is not implemented.')
 
+    # Trigger an alert when a pgpool event is sent
+    def pgpool_alert(self, pgpool_info):
+        raise NotImplementedError('PGPool Alert is not implemented.')
+
     # Return a version of the string with the correct substitutions made
     @staticmethod
     def replace(string, pkinfo):

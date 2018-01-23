@@ -18,7 +18,7 @@ import gipc
 from Alarms import alarm_factory
 from Cache import cache_factory
 from Filters import load_pokemon_section, load_pokestop_section, \
-    load_gym_section, load_egg_section, load_raid_section, load_filters
+    load_gym_section, load_egg_section, load_raid_section, load_filters, load_pgpool_section
 from Geofence import load_geofence_file
 from Locale import Locale
 from LocationServices import location_service_factory
@@ -133,6 +133,7 @@ class Manager(object):
                         self.__gym_settings = {}
                         self.__raid_settings = {}
                         self.__egg_settings = {}
+                        self.__pgpool_settings = {}
                         if not self.load_filter_file(get_path(filename), startup=False):
                             # Config has errors, retry next time
                             continue
@@ -215,6 +216,11 @@ class Manager(object):
             # Load in the Raid Section
             self.__raid_settings = load_raid_section(
                 require_and_remove_key('raids', filters, "Filters file."))
+
+            if 'pgpool' in filters:
+                self.__pgpool_settings = load_pgpool_section(filters['pgpool'])
+            else:
+                self.__pgpool_settings = {}
 
             return True
 
@@ -431,6 +437,8 @@ class Manager(object):
                     self.process_raid(obj)
                 elif kind == "location":
                     self.process_location(obj)
+                elif kind == "pgpool":
+                    self.process_pgpool(obj)
                 else:
                     log.error("!!! Manager does not support "
                               + "{} objects!".format(kind))
@@ -1333,6 +1341,36 @@ class Manager(object):
         loc_str = "{}, {}".format(coords['latitude'], coords['longitude'])
         self.set_location(loc_str)
 
+    def process_pgpool(self, event):
+
+        #Check if pgpool settings is enabled, return false if does not exist
+        if self.__pgpool_settings.get('enabled',False) is False:
+            if self.__quiet is False:
+                log.debug("PGPool Event ignored: pgpool notifications are disabled.")
+            return
+
+        subtype = event['subtype']
+        if subtype not in self.__pgpool_settings['subtypes']:
+            if self.__quiet is False:
+                log.debug("PGPool Event ignored: {} not in filter".format(subtype))
+            return
+
+        passed = False
+        for filtct in self.__pgpool_settings['filters']:
+            if
+
+
+
+        threads = []
+        # Spawn notifications in threads so they can work in background
+        for alarm in self.__alarms:
+            threads.append(gevent.spawn(alarm.pgpool_alert, event))
+
+            gevent.sleep(0)  # explict context yield
+
+        for thread in threads:
+            thread.join()
+
     # Check to see if a notification is within the given range
     def check_geofences(self, name, lat, lng):
         for gf in self.__geofences:
@@ -1345,3 +1383,4 @@ class Manager(object):
         return 'unknown'
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
